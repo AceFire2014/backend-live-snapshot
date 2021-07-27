@@ -1,0 +1,96 @@
+version: "3"
+
+services:
+
+  rabbitmq:
+    ports:
+      - 5672:5672
+      - 15672:15672
+    image: rabbitmq:3.8.5-management
+
+  beat:
+    image: thumbnail_tasks
+    build:
+      dockerfile: tasks/build/Dockerfile
+      context: .
+    working_dir: /opt/application
+    environment:
+      AMQP_URL: amqp://guest:guest@rabbitmq:5672
+      CONFIG: tasks.config
+      LOG_TARGET: stdout
+      APP_NAME: CD.Thumbnail.BE.beat
+      MODE: dev
+    volumes:
+      - './tasks:/opt/application/tasks'
+      - './common:/opt/application/common'
+    depends_on:
+      - worker
+      - rabbitmq
+    networks:
+      - default
+    command:
+      - 'beat'
+    restart: unless-stopped
+
+  worker:
+    image: thumbnail_tasks
+    build:
+      dockerfile: tasks/build/Dockerfile
+      context: .
+    working_dir: /opt/application
+    environment:
+      AMQP_URL: amqp://guest:guest@rabbitmq:5672
+      CONFIG: tasks.config
+      LOG_TARGET: stdout
+      APP_NAME: CD.Thumbnail.BE.worker
+      MODE: dev
+    extra_hosts:
+      - 'broadcast-orchestrator.ffnrct.com:10.111.64.129'
+    volumes:
+      - './tasks:/opt/application/tasks'
+      - './common:/opt/application/common'
+      - 'image_storage:/var/storage'
+    depends_on:
+      - rabbitmq
+    networks:
+      - default
+    command:
+      - 'worker'
+      - '--pool'
+      - 'solo'  # avoid asyncio eventloop duplication on forking
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.19.0-alpine
+    ports:
+      - 8000:8000
+      - 8443:8443
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/templates/nginx.conf.template
+      - ./nginx/nginx.crt:/etc/nginx/nginx.crt
+      - ./nginx/nginx.key:/etc/nginx/nginx.key
+      - image_storage:/var/storage
+    networks:
+      - default
+    restart: unless-stopped
+
+      # flower:
+      #   image: mher/flower
+      #   command: ["flower", "--broker=amqp://guest:guest@rabbitmq:5672", "--port=8888"]
+      #   ports:
+      #     - 8888:8888
+      #   depends_on:
+      #     - rabbitmq
+      #   networks:
+      #     - default
+      #   restart: unless-stopped
+
+networks:
+  default:
+    ipam:
+      config:
+      - subnet: '192.168.30.0/26'
+
+
+volumes:
+  image_storage:

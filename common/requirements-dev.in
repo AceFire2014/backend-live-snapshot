@@ -1,0 +1,11 @@
+requests
+ujson
+frozendict
+redis-py-cluster
+async-generator
+aioresponses
+asynctest
+pytest
+parameterized
+responses
+PyJWT

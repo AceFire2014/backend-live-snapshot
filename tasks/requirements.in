@@ -1,0 +1,16 @@
+backoff-async==2.0.0
+cachetools==4.1.1
+celery==4.4.7
+PyJWT==1.7.1
+requests==2.24.0
+ujson==3.2.0
+frozendict==1.2
+aiohttp==3.6.3
+aiofile==1.5.2
+aio_pika==6.7.1
+aredis==1.1.8
+redis-py-cluster==2.0.0
+async-exit-stack==1.0.1
+async-generator==1.10
+pika==1.1.0
+pillow==8.2.0
