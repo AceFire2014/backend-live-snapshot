@@ -60,6 +60,7 @@ def make_all_preview_videos() -> None:
 
     won = cams_api.get_won()
 
+    log.info(f'make_all_preview_videos: {won}')
     for i in range(len(won.won_stream_names)):
         make_preview_video.apply_async(
             kwargs={
