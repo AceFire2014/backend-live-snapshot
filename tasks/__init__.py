@@ -15,7 +15,7 @@ def disable_standard_celery_logging(*args, **kwargs):
     pass
 
 
-celery_app = Celery('cdbct',
+celery_app = Celery('preview_thumbnail',
                     broker=load_class(config.CELERY_BROKER_BUS),
                     backend=load_class(config.CELERY_BACKEND_BUS),
                     include=['tasks.tasks'])
