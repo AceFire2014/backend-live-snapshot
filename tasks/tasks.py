@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import List
 
 from celery.exceptions import SoftTimeLimitExceeded
+from celery.signals import worker_ready
 from requests.exceptions import RequestException
 
 from common.cams.api import CamsAPI
@@ -17,6 +18,12 @@ from tasks import celery_app
 log = logging.getLogger(__name__)
 
 cams_api = CamsAPI(CamsAPISyncRequester(config.CAMS_URL))
+
+
+@worker_ready.connect
+def at_start(sender, **k):
+    with sender.app.connection() as conn:
+        sender.app.send_task('tasks.tasks.make_all_preview_videos', connection=conn)
 
 
 def ensure_exists(path):
