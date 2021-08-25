@@ -59,6 +59,9 @@ services:
       - '--pool'
       - 'solo'  # avoid asyncio eventloop duplication on forking
     restart: unless-stopped
+    deploy:
+      mode: replicated
+      replicas: 2
 
   nginx:
     image: nginx:1.19.0-alpine
