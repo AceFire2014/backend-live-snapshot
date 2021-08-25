@@ -126,7 +126,7 @@ def _is_preview_video_size_valid(preview_video_file_path: str) -> bool:
 
 
 def _get_preview_video_symlink_file_name(stream_name: str) -> str:
-    return f'{stream_name}.mp4'
+    return f'{stream_name.lower()}.mp4'
 
 
 def _get_preview_video_symlink_file_path(stream_name: str) -> str:
