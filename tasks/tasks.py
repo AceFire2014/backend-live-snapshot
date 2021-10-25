@@ -96,7 +96,7 @@ def _get_preview_video_name(stream_name: str) -> str:
 
 def _capture_preview_video(preview_video_file_path: str, rtmp_url: str, stream_name: str) -> None:
     ffmpeg_cmd = f'timeout 30s ffmpeg -y -hide_banner -loglevel error -re -i "{rtmp_url}" '\
-                 f'-ss 0 -t 10 -movflags +faststart -c copy "{preview_video_file_path}"'
+                 f'-t 10 -movflags +faststart -c copy "{preview_video_file_path}"'
     log.info(f'{stream_name}: ffmpeg_cmd: {ffmpeg_cmd}')
 
     try:
