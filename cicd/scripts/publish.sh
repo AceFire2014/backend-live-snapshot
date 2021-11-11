@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e -u -x
+set -e -u -x -a
 
 script_path="$(dirname $0)"
 script_name="$(basename $0)"
