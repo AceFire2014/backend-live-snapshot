@@ -11,5 +11,4 @@ spec:
     requests:
       storage: 30Gi
   volumeName: bls-shared-data-{{ k8s_ns }}
-  storageClassName: kb-warm-kubeffn-001
   volumeMode: Filesystem
