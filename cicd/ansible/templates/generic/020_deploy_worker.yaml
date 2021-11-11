@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ base_name }}-worker
+  namespace: {{ k8s_ns }}
+  annotations:
+    reloader.stakater.com/auto: "true"
+  labels:
+    build: {{ build_slug }}
+    service: {{ base_name }}
+spec:
+  replicas: {{ replicas.worker }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: {{ base_name }}-worker
+  template:
+    metadata:
+      labels:
+        app: {{ base_name }}-worker
+        build: {{ build_slug }}
+        service: {{ base_name }}
+    spec:
+      volumes:
+        - name: bls-shared-data-{{ k8s_ns }}
+          persistentVolumeClaim:
+            claimName: bls-shared-data-{{ k8s_ns }}
+      containers:
+        - name: worker
+          volumeMounts:
+            - mountPath: /var/storage
+              name: bls-shared-data-{{ k8s_ns }}
+          image: {{ main_image_name }}
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: APP_NAME
+            value: CD.Thumbnail.BE.beat
+          envFrom:
+          - configMapRef:
+              name: {{ config_map_name }}
+          resources:
+            requests:
+              memory: "200Mi"
+              cpu: "100m"
+          command: [ "celery" ]
+          args: [""worker"", "--pool", "solo", "--loglevel={{ log_level }}"]
+      terminationGracePeriodSeconds: 60
+      imagePullSecrets:
+        - name: gcr-json-key
+      nodeSelector:
+        kubernetes.io/os: "linux"
+        node-role.kubernetes.io/cicd: "true"
+      tolerations:
+        - effect: "NoSchedule"
+          key: "payload"
+          operator: "Equal"
+          value: "cicd"
+---
+kind: HorizontalPodAutoscaler
+apiVersion: autoscaling/v2beta2
+metadata:
+metadata:
+  name: "{{ base_name }}-worker"
+  namespace: "{{ k8s_ns }}"
+  labels:
+    service: {{ label_app_base }}
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: "{{ base_name }}-worker"
+    apiVersion: apps/v1
+  minReplicas: {{ hpa.worker.min }}
+  maxReplicas: {{ hpa.worker.max }}
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+            type: Utilization
+            averageUtilization: {{ hpa.worker.mem }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+            type: Utilization
+            averageUtilization: {{ hpa.worker.max }}

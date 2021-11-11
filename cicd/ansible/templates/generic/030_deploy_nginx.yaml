@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ base_name }}-nginx
+  namespace: {{ k8s_ns }}
+  annotations:
+    reloader.stakater.com/auto: "true"
+  labels:
+    build: {{ build_slug }}
+    service: {{ base_name }}
+spec:
+  replicas: {{ replicas.nginx }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: {{ base_name }}-nginx
+  template:
+    metadata:
+      labels:
+        app: {{ base_name }}-nginx
+        build: {{ build_slug }}
+        service: {{ base_name }}
+    spec:
+      volumes:
+        - name: bls-shared-data-{{ k8s_ns }}
+          persistentVolumeClaim:
+            claimName: bls-shared-data-{{ k8s_ns }}
+        - name: {{ base_name }}-nginx
+            configMap:
+            name: {{ base_name }}-nginx
+            items:
+                - key: nginx.conf
+                  path: nginx.conf
+      containers:
+        - name: nginx
+          volumeMounts:
+            - mountPath: /var/storage
+              name: bls-shared-data-{{ k8s_ns }}
+            - name: {{ base_name }}-nginx
+              mountPath: /etc/nginx/templates
+              subPath: nginx.conf.template
+              readOnly: true
+          image: {{ nginx_image_name }}
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "200Mi"
+              cpu: "100m"
+      terminationGracePeriodSeconds: 60
+      imagePullSecrets:
+        - name: gcr-json-key
+      nodeSelector:
+        kubernetes.io/os: "linux"
+        node-role.kubernetes.io/cicd: "true"
+      tolerations:
+        - effect: "NoSchedule"
+          key: "payload"
+          operator: "Equal"
+          value: "cicd"
+---
+kind: HorizontalPodAutoscaler
+apiVersion: autoscaling/v2beta2
+metadata:
+metadata:
+  name: "{{ base_name }}-nginx"
+  namespace: "{{ k8s_ns }}"
+  labels:
+    service: {{ label_app_base }}
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: "{{ base_name }}-nginx"
+    apiVersion: apps/v1
+  minReplicas: {{ hpa.nginx.min }}
+  maxReplicas: {{ hpa.nginx.max }}
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+            type: Utilization
+            averageUtilization: {{ hpa.nginx.mem }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+            type: Utilization
+            averageUtilization: {{ hpa.nginx.max }}

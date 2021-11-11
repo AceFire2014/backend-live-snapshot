@@ -1,0 +1,22 @@
+- name: Health-checks
+  hosts: local
+  gather_facts: no
+
+  tasks:
+    - name: Check deployment statuses
+      shell: kubectl --kubeconfig=/tmp/config -n {{ k8s_ns }} rollout status deployment {{ item }} --watch --timeout=15m
+      loop:
+        - "{{ base_name }}-beat"
+        - "{{ base_name }}-worker"
+        - "{{ base_name }}-nginx"
+
+    - name: Enpdoint health-check
+      uri:
+        url: "https://{{ service_host }}{{ health_check_path }}"
+        method: GET
+      register: _result
+      until: _result.status == 200
+      retries: 120 # 120 * 5 seconds = 10 minutes
+      delay: 5 # Every 5 seconds
+
+

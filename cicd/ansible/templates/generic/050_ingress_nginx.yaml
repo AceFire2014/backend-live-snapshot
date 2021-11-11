@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ base_name }}
+  namespace: {{ k8s_ns }}
+  annotations:
+    kubernetes.io/ingress.class: {{ class_nginx }}
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-body-size: "1G"
+    nginx.ingress.kubernetes.io/load-balance: "round_robin"
+  labels:
+    build: {{ build_slug }}
+    service: {{ base_name }}
+spec:
+  tls:
+  - hosts:
+    - {{ service_host }}
+    secretName: cicd-wildcards-cams.run-tls
+  rules:
+  - host: {{ service_host }}
+    http:
+      paths:
+       - path: /(.*)
+         pathType: Prefix
+         backend:
+          service:
+            name: {{ base_name }}-nginx
+            port:
+              number: 8000

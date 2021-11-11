@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ base_name }}-nginx
+  namespace: {{ k8s_ns }}
+  labels:
+    build: {{ build_slug }}
+    service: {{ base_name }}
+spec:
+  type: ClusterIP
+  selector:
+      app: {{ base_name }}-nginx
+  ports:
+  - name: nginx
+    port: 8000
+    targetPort: 8000

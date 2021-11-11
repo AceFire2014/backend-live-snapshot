@@ -1,0 +1,40 @@
+base_name: "bls_{{ lookup('env', 'BRANCH_SLUG') }}"
+k8s_ns: "{{ lookup('env', 'K8S_NS') }}"
+build_slug: "{{ lookup('env', 'BUILD_SLUG') }}"
+main_image_name: "{{ lookup('env', 'MAIN_IMAGE_TAG') }}"
+nginx_image_name: "{{ lookup('env', 'NGINX_IMAGE_TAG') | default('nginx:1.19.0-alpine') }}"
+config_map_name: "bls-config-map"
+log_level: INFO
+service_host: "{{ lookup('env', 'SERVICE_HOST') }}"
+class_nginx: "{{ lookup('env', 'NGINX_CLASS') | default('nginxcicd') }}"
+health_check_path: "/"
+templates_path: templates/generic
+templates_list:
+  - 010_deploy_beat.yaml
+  - 020_deploy_worker.yaml
+  - 025_config_nginx.yaml
+  - 030_deploy_nginx.yaml
+  - 040_service_nginx.yaml
+  - 050_ingress_nginx.yaml
+
+replicas:
+  beat: 1
+  worker: 2
+  nginx: 2
+
+hpa:
+  beat:
+    min: 1
+    max: 1
+    mem: 70
+    cpu: 50
+  worker:
+    min: 2
+    max: 2
+    mem: 70
+    cpu: 50
+  nginx:
+    min: 2
+    max: 2
+    mem: 70
+    cpu: 50

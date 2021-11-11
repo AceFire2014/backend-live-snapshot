@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ base_name }}-beat
+  namespace: {{ k8s_ns }}
+  annotations:
+    reloader.stakater.com/auto: "true"
+  labels:
+    build: {{ build_slug }}
+    service: {{ base_name }}
+spec:
+  replicas: {{ replicas.beat }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: {{ base_name }}-beat
+  template:
+    metadata:
+      labels:
+        app: {{ base_name }}-beat
+        build: {{ build_slug }}
+        service: {{ base_name }}
+    spec:
+      containers:
+        - name: beat
+          image: {{ main_image_name }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: APP_NAME
+              value: CD.Thumbnail.BE.beat
+          envFrom:
+          - configMapRef:
+              name: {{ config_map_name }}
+          resources:
+            requests:
+              memory: "200Mi"
+              cpu: "100m"
+          command: [ "celery" ]
+          args: [ "beat", "-A", "tasks.app.celery_app, "--loglevel={{ log_level }}"]" ]
+      terminationGracePeriodSeconds: 60
+      imagePullSecrets:
+        - name: gcr-json-key
+      nodeSelector:
+        kubernetes.io/os: "linux"
+        node-role.kubernetes.io/cicd: "true"
+      tolerations:
+        - effect: "NoSchedule"
+          key: "payload"
+          operator: "Equal"
+          value: "cicd"
+---
+kind: HorizontalPodAutoscaler
+apiVersion: autoscaling/v2beta2
+metadata:
+metadata:
+  name: "{{ base_name }}-beat"
+  namespace: "{{ k8s_ns }}"
+  labels:
+    service: {{ label_app_base }}
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: "{{ base_name }}-beat"
+    apiVersion: apps/v1
+  minReplicas: {{ hpa.beat.min }}
+  maxReplicas: {{ hpa.beat.max }}
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+            type: Utilization
+            averageUtilization: {{ hpa.beat.mem }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+            type: Utilization
+            averageUtilization: {{ hpa.beat.max }}

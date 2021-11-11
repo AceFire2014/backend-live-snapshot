@@ -1,0 +1,27 @@
+- name: Deploying broadcast-orchestrator services
+  hosts: local
+
+  tasks:
+
+  - name: Delete temp dir
+    file:
+      path: /tmp/k8s
+      state: absent
+
+  - name: Create temp dir
+    file:
+      path: /tmp/k8s
+      state: directory
+
+  - name: Generate YAMLs
+    template:
+      src: "{{ templates_path }}/{{ item }}"
+      dest: "/tmp/k8s/{{ item }}"
+    loop: "{{ templates_list }}"
+
+  - name: Apply k8s resources
+    shell: kubectl --kubeconfig=/tmp/config apply -f /tmp/k8s
+    register: result
+    retries: 3
+    delay: 10
+    until: result is not failed
