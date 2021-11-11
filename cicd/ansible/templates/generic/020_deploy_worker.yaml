@@ -67,7 +67,7 @@ metadata:
   name: "{{ base_name }}-worker"
   namespace: "{{ k8s_ns }}"
   labels:
-    service: {{ label_app_base }}
+    service: {{ base_name }}
 spec:
   scaleTargetRef:
     kind: Deployment
