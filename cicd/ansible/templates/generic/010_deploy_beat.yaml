@@ -40,7 +40,7 @@ spec:
               memory: "200Mi"
               cpu: "100m"
           command: [ "celery" ]
-          args: [ "beat", "-A", "tasks.app.celery_app, "--loglevel={{ log_level }}"]" ]
+          args: [ "beat", "-A", "tasks.app.celery_app", "--loglevel={{ log_level }}" ]
       terminationGracePeriodSeconds: 60
       imagePullSecrets:
         - name: gcr-json-key

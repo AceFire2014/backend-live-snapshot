@@ -47,7 +47,7 @@ spec:
               memory: "200Mi"
               cpu: "100m"
           command: [ "celery" ]
-          args: [""worker"", "--pool", "solo", "--loglevel={{ log_level }}"]
+          args: ["worker", "--pool", "solo", "--loglevel={{ log_level }}" ]
       terminationGracePeriodSeconds: 60
       imagePullSecrets:
         - name: gcr-json-key

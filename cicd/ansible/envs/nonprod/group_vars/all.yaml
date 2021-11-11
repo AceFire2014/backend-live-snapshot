@@ -1,4 +1,4 @@
-base_name: "bls_{{ lookup('env', 'BRANCH_SLUG') }}"
+base_name: "bls-{{ lookup('env', 'BRANCH_SLUG') }}"
 k8s_ns: "{{ lookup('env', 'K8S_NS') }}"
 build_slug: "{{ lookup('env', 'BUILD_SLUG') }}"
 main_image_name: "{{ lookup('env', 'MAIN_IMAGE_TAG') }}"
