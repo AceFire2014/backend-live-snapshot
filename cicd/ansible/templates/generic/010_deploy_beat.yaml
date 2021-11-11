@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: beat
-          image: {{ main_image_name }}
+          image: "{{ main_image_name }}"
           imagePullPolicy: IfNotPresent
           env:
             - name: APP_NAME

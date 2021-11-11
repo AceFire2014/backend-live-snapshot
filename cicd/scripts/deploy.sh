@@ -14,6 +14,9 @@ if [ "x$K8S_NS" == "xprod" ]; then
 fi
 echo "INVENTORY: $INVENTORY"
 
+echo "+++ printenv +++"
+printenv
+
 pushd $ANSIBLE_FOLDER
 ansible-playbook -i envs/${INVENTORY} play.yaml -vvvv
 popd

@@ -34,7 +34,7 @@ spec:
           volumeMounts:
             - mountPath: /var/storage
               name: bls-shared-data-{{ k8s_ns }}
-          image: {{ main_image_name }}
+          image: "{{ main_image_name }}"
           imagePullPolicy: IfNotPresent
           env:
           - name: APP_NAME
