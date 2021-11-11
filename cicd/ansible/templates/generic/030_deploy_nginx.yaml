@@ -31,7 +31,7 @@ spec:
             claimName: bls-shared-data-{{ k8s_ns }}
         - name: {{ base_name }}-nginx
           configMap:
-            {{ base_name }}-nginx
+            name: {{ base_name }}-nginx
             items:
               - key: nginx.conf
                 path: nginx.conf
