@@ -4,7 +4,7 @@ A standalone service to create and offer preview_thumbnail(e.g. video, snapshot)
 
 ## commands
 
-- `$docker-compose up`: start application
+- `$make run`: start application
 - `$docker-compose down`: stop & clean application
 
 ## access video thumbnail
