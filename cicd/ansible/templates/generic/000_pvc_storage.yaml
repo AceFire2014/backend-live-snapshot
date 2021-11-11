@@ -12,3 +12,14 @@ spec:
       storage: 30Gi
   volumeName: bls-shared-data-{{ k8s_ns }}
   volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  metadata:
+  namespace: {{ k8s_ns }}
+  name: bls-shared-data-{{ k8s_ns }}
+spec:
+  claimRef:
+    namespace: {{ k8s_ns }}
+    name: bls-shared-data-{{ k8s_ns }}
