@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+import subprocess as sp
+import shlex
+import json
 import time
 from datetime import datetime
 from typing import List
 
 from celery.exceptions import SoftTimeLimitExceeded
-from celery.signals import worker_ready
 from requests.exceptions import RequestException
 
 from common.cams.api import CamsAPI
@@ -19,11 +21,13 @@ log = logging.getLogger(__name__)
 
 cams_api = CamsAPI(CamsAPISyncRequester(config.CAMS_URL))
 
+if config.MODE == 'dev':
+    from celery.signals import worker_ready
 
-# @worker_ready.connect
-# def at_start(sender, **k):
-#     with sender.app.connection() as conn:
-#         sender.app.send_task('tasks.tasks.make_all_preview_videos', connection=conn)
+    @worker_ready.connect
+    def at_start(sender, **k):
+        with sender.app.connection() as conn:
+            sender.app.send_task('tasks.tasks.make_all_preview_videos', connection=conn)
 
 
 def ensure_exists(path):
@@ -134,6 +138,26 @@ def _is_preview_video_size_valid(preview_video_file_path: str) -> bool:
     return file_size > config.PREVIEW_VIDEO_FILE_SIZE_THRESHOLD
 
 
+def _is_blurry(preview_video_file_path: str) -> bool:
+    bash_cmd = f'ffprobe -v error -select_streams v:0 -show_entries stream=bit_rate,r_frame_rate,avg_frame_rate '\
+               f'-print_format json "{preview_video_file_path}"'
+    data = sp.run(shlex.split(bash_cmd), stdout=sp.PIPE).stdout
+    dict_data = json.loads(data)
+    try:
+        bit_rate = int(dict_data['streams'][0]['bit_rate'])
+        r_frame_rate1, r_frame_rate2 = dict_data['streams'][0]['r_frame_rate'].split('/')
+        r_frame_rate = int(r_frame_rate1) / int(r_frame_rate2)
+        avg_frame_rate1, avg_frame_rate2 = dict_data['streams'][0]['avg_frame_rate'].split('/')
+        avg_frame_rate = int(avg_frame_rate1) / int(avg_frame_rate2)
+        if (9 <= r_frame_rate <= 11 or 9 <= avg_frame_rate <= 11) and bit_rate < 450000:
+            return True
+        else:
+            return False
+    except Exception as e:
+        log.error(f'{bash_cmd}: _is_blurry() : {e}')
+        raise
+
+
 def _get_preview_video_symlink_file_name(stream_name: str) -> str:
     return f'{stream_name.lower()}.mp4'
 
@@ -186,7 +210,7 @@ def make_preview_video(stream_name: str) -> None:
         rtmp_url = _get_rtmp_url(stream)
         _capture_preview_video(new_preview_video_file_path, rtmp_url, stream_name)
 
-        if _is_preview_video_size_valid(new_preview_video_file_path):
+        if _is_preview_video_size_valid(new_preview_video_file_path) and not _is_blurry(new_preview_video_file_path):
             _update_preview_video_symlink(stream_name, new_preview_video_file_path)
 
             symlink_file_name = _get_preview_video_symlink_file_name(stream_name)
