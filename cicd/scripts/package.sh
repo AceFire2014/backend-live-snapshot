@@ -9,7 +9,7 @@ echo "Running $script_name steps ..."
 source $script_path/envars.sh
 
 cp $MAIN_IMAGE_FOLDER/.dockerignore .
-cp $MAIN_IMAGE_FOLDER/.Dockerfile .
+cp $MAIN_IMAGE_FOLDER/Dockerfile .
 
 docker build \
   -t ${MAIN_IMAGE_TAG} \
