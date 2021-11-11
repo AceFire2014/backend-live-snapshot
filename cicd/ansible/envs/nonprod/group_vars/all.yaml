@@ -10,6 +10,7 @@ class_nginx: "{{ lookup('env', 'NGINX_CLASS') | default('nginxcicd') }}"
 health_check_path: "/"
 templates_path: templates/generic
 templates_list:
+  - 000_pvc_storage.yaml
   - 010_deploy_beat.yaml
   - 020_deploy_worker.yaml
   - 025_config_nginx.yaml

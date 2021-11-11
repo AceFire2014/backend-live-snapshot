@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: {{ k8s_ns }}
+  name: bls-shared-data-{{ k8s_ns }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 30Gi
+  volumeName: bls-shared-data-{{ k8s_ns }}
+  storageClassName: kb-warm-kubeffn-001
+  volumeMode: Filesystem
