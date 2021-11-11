@@ -149,7 +149,9 @@ def _is_blurry(preview_video_file_path: str) -> bool:
         r_frame_rate = int(r_frame_rate1) / int(r_frame_rate2)
         avg_frame_rate1, avg_frame_rate2 = dict_data['streams'][0]['avg_frame_rate'].split('/')
         avg_frame_rate = int(avg_frame_rate1) / int(avg_frame_rate2)
-        if (9 <= r_frame_rate <= 11 or 9 <= avg_frame_rate <= 11) and bit_rate < 450000:
+        if (int(r_frame_rate) == 10 or int(avg_frame_rate) == 10):
+            return True
+        elif (9 <= r_frame_rate <= 11 or 9 <= avg_frame_rate <= 11) and bit_rate < 450000:
             return True
         else:
             return False
