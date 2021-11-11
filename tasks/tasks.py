@@ -85,7 +85,16 @@ def _get_stream(stream_name: str) -> StreamSession:
 def _get_rtmp_url(stream: dict) -> str:
     subdomain = stream.subdomain
     stream_name = stream.stream_name.lower()
-    rtmp_url = f'rtmp://{subdomain}/cams/{stream_name}/{stream_name}_720p'
+    '''
+    Per Murat's comment:
+    we got 3 outputs now,
+    (1) modelname_720p is raw video, no transcoding.
+    (2) modelname__720p is 720p transcode at fixed video bitrate of 1300 kbps.
+    (3) modelname__360p is 360p transcode at 550 kbps.
+    we should use modelname__720p to grab video.
+    '''
+
+    rtmp_url = f'rtmp://{subdomain}/cams/{stream_name}/{stream_name}__720p'
     return rtmp_url
 
 
