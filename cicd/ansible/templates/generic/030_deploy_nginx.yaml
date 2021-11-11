@@ -30,11 +30,11 @@ spec:
           persistentVolumeClaim:
             claimName: bls-shared-data-{{ k8s_ns }}
         - name: {{ base_name }}-nginx
-          configMap:
-          name: {{ base_name }}-nginx
-          items:
-            - key: nginx.conf
-              path: nginx.conf
+              configMap:
+                {{ base_name }}-nginx
+                items:
+                  - key: nginx.conf
+                    path: nginx.conf
       containers:
         - name: nginx
           volumeMounts:
