@@ -14,6 +14,7 @@
       uri:
         url: "https://{{ service_host }}{{ health_check_path }}"
         method: GET
+        status_code: 403
       register: _result
       until: _result.status == 403
       retries: 120 # 120 * 5 seconds = 10 minutes
