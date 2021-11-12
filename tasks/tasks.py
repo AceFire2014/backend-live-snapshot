@@ -217,10 +217,12 @@ def make_preview_video(stream_name: str) -> None:
         if _is_preview_video_size_valid(new_preview_video_file_path) and not _is_blurry(new_preview_video_file_path):
             _update_preview_video_symlink(stream_name, new_preview_video_file_path)
             exclusive_file_names.append(new_preview_video_name)
+            log.info('keep new video: {new_preview_video_name}')
         else:
             symlink_file_path = _get_preview_video_symlink_file_path(stream_name)
             existing_preview_video_name = os.path.realpath(symlink_file_path).split('/')[-1]
             exclusive_file_names.append(existing_preview_video_name)
+            log.info('keep old video: {existing_preview_video_name}')
         _cleanup_preview_videos(stream_name, exclusive_file_names)
     except SoftTimeLimitExceeded:
         log.error(f'{stream_name}: Failed to create preview video within the time specified.')
