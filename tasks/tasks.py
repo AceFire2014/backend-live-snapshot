@@ -183,12 +183,12 @@ def _is_old_preview_videos(stream_name: str, filename: str, exclusive_file_names
     return ((stream_name in filename) and (filename not in exclusive_file_names))
 
 
-def _cleanup_old_preview_videos(stream_name: str, exclusive_file_names: List[str]) -> None:
-    log.info(f'{stream_name}: _cleanup_old_preview_videos start')
+def _cleanup_preview_videos(stream_name: str, exclusive_file_names: List[str]) -> None:
+    log.info(f'{stream_name}: _cleanup_preview_videos start')
     cleanup_files(directory=config.PREVIEW_VIDEO_STORAGE_PATH,
                   file_filter=(lambda filename, file_stat:
                                _is_old_preview_videos(stream_name, filename, exclusive_file_names)))
-    log.info(f'{stream_name}: _cleanup_old_preview_videos end')
+    log.info(f'{stream_name}: _cleanup_preview_videos end')
 
 
 def _get_preview_video_file_path(preview_video_name: str) -> str:
@@ -212,12 +212,16 @@ def make_preview_video(stream_name: str) -> None:
         rtmp_url = _get_rtmp_url(stream)
         _capture_preview_video(new_preview_video_file_path, rtmp_url, stream_name)
 
+        symlink_file_name = _get_preview_video_symlink_file_name(stream_name)
+        exclusive_file_names = [symlink_file_name]
         if _is_preview_video_size_valid(new_preview_video_file_path) and not _is_blurry(new_preview_video_file_path):
             _update_preview_video_symlink(stream_name, new_preview_video_file_path)
-
-            symlink_file_name = _get_preview_video_symlink_file_name(stream_name)
-            exclusive_file_names = [symlink_file_name, new_preview_video_name]
-            _cleanup_old_preview_videos(stream_name, exclusive_file_names)
+            exclusive_file_names.append(new_preview_video_name)
+        else:
+            symlink_file_path = _get_preview_video_symlink_file_path(stream_name)
+            existing_preview_video_name = os.path.realpath(symlink_file_path).split('/')[-1]
+            exclusive_file_names.append(existing_preview_video_name)
+        _cleanup_preview_videos(stream_name, exclusive_file_names)
     except SoftTimeLimitExceeded:
         log.error(f'{stream_name}: Failed to create preview video within the time specified.')
     except Exception as e:
