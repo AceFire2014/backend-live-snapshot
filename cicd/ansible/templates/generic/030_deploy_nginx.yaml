@@ -32,9 +32,6 @@ spec:
         - name: {{ base_name }}-nginx
           configMap:
             name: {{ base_name }}-nginx
-            items:
-              - key: nginx.conf
-                path: nginx.conf
       containers:
         - name: nginx
           volumeMounts:
@@ -42,6 +39,7 @@ spec:
               name: bls-shared-data-{{ k8s_ns }}
             - name: {{ base_name }}-nginx
               mountPath: /etc/nginx/templates/nginx.conf.template
+              subPath: nginx.conf
               readOnly: true
           image: "nginx:1.19.0-alpine"
           imagePullPolicy: IfNotPresent
