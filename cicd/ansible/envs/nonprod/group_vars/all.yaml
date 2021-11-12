@@ -7,7 +7,7 @@ config_map_name: "bls-config-map"
 log_level: INFO
 service_host: "{{ lookup('env', 'SERVICE_HOST') }}"
 class_nginx: "{{ lookup('env', 'NGINX_CLASS') | default('nginxcicd') }}"
-health_check_path: "/"
+health_check_path: "/storage/"
 templates_path: templates/generic
 templates_list:
   - 000_pvc_storage.yaml
