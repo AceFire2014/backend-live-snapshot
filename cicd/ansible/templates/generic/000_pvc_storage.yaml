@@ -1,31 +1,12 @@
----
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  namespace: cicd-dev
-  name: bls-shared-data-cicd-dev
+  namespace: {{ k8s_ns }}
+  name: bls-shared-data-{{ k8s_ns }}
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 500Gi
-  volumeName: bls-shared-data-cicd-dev
   volumeMode: Filesystem
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-    namespace: cicd-dev
-    name: bls-shared-data-cicd-dev
-spec:
-  capacity:
-    storage: 500Gi
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: kb-warm-kubeffn-001
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteOnce
-  claimRef:
-    namespace: cicd-dev
-    name: bls-shared-data-cicd-dev
