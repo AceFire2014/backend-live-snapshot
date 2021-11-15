@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+import subprocess as sp
+import shlex
+import json
 import time
 from datetime import datetime
 from typing import List
 
 from celery.exceptions import SoftTimeLimitExceeded
-from celery.signals import worker_ready
 from requests.exceptions import RequestException
 
 from common.cams.api import CamsAPI
@@ -19,11 +21,13 @@ log = logging.getLogger(__name__)
 
 cams_api = CamsAPI(CamsAPISyncRequester(config.CAMS_URL))
 
+if config.MODE == 'dev':
+    from celery.signals import worker_ready
 
-# @worker_ready.connect
-# def at_start(sender, **k):
-#     with sender.app.connection() as conn:
-#         sender.app.send_task('tasks.tasks.make_all_preview_videos', connection=conn)
+    @worker_ready.connect
+    def at_start(sender, **k):
+        with sender.app.connection() as conn:
+            sender.app.send_task('tasks.tasks.make_all_preview_videos', connection=conn)
 
 
 def ensure_exists(path):
@@ -85,7 +89,16 @@ def _get_stream(stream_name: str) -> StreamSession:
 def _get_rtmp_url(stream: dict) -> str:
     subdomain = stream.subdomain
     stream_name = stream.stream_name.lower()
-    rtmp_url = f'rtmp://{subdomain}/cams/{stream_name}/{stream_name}_720p'
+    '''
+    Per Murat's comment:
+    we got 3 outputs now,
+    (1) modelname_720p is raw video, no transcoding.
+    (2) modelname__720p is 720p transcode at fixed video bitrate of 1300 kbps.
+    (3) modelname__360p is 360p transcode at 550 kbps.
+    we should use modelname__720p to grab video.
+    '''
+
+    rtmp_url = f'rtmp://{subdomain}/cams/{stream_name}/{stream_name}__720p'
     return rtmp_url
 
 
@@ -125,6 +138,26 @@ def _is_preview_video_size_valid(preview_video_file_path: str) -> bool:
     return file_size > config.PREVIEW_VIDEO_FILE_SIZE_THRESHOLD
 
 
+def _is_blurry(preview_video_file_path: str) -> bool:
+    bash_cmd = f'ffprobe -v error -select_streams v:0 -show_entries stream=bit_rate,r_frame_rate,avg_frame_rate '\
+               f'-print_format json "{preview_video_file_path}"'
+    data = sp.run(shlex.split(bash_cmd), stdout=sp.PIPE).stdout
+    dict_data = json.loads(data)
+    try:
+        bit_rate = int(dict_data['streams'][0]['bit_rate'])
+        r_frame_rate1, r_frame_rate2 = dict_data['streams'][0]['r_frame_rate'].split('/')
+        r_frame_rate = int(r_frame_rate1) / int(r_frame_rate2)
+        avg_frame_rate1, avg_frame_rate2 = dict_data['streams'][0]['avg_frame_rate'].split('/')
+        avg_frame_rate = int(avg_frame_rate1) / int(avg_frame_rate2)
+        if (r_frame_rate <= 11 or avg_frame_rate <= 11 or bit_rate < 450000):
+            return True
+        else:
+            return False
+    except Exception as e:
+        log.error(f'{bash_cmd}: _is_blurry() : {e}')
+        raise
+
+
 def _get_preview_video_symlink_file_name(stream_name: str) -> str:
     return f'{stream_name.lower()}.mp4'
 
@@ -148,12 +181,12 @@ def _is_old_preview_videos(stream_name: str, filename: str, exclusive_file_names
     return ((stream_name in filename) and (filename not in exclusive_file_names))
 
 
-def _cleanup_old_preview_videos(stream_name: str, exclusive_file_names: List[str]) -> None:
-    log.info(f'{stream_name}: _cleanup_old_preview_videos start')
+def _cleanup_preview_videos(stream_name: str, exclusive_file_names: List[str]) -> None:
+    log.info(f'{stream_name}: _cleanup_preview_videos start')
     cleanup_files(directory=config.PREVIEW_VIDEO_STORAGE_PATH,
                   file_filter=(lambda filename, file_stat:
                                _is_old_preview_videos(stream_name, filename, exclusive_file_names)))
-    log.info(f'{stream_name}: _cleanup_old_preview_videos end')
+    log.info(f'{stream_name}: _cleanup_preview_videos end')
 
 
 def _get_preview_video_file_path(preview_video_name: str) -> str:
@@ -177,12 +210,18 @@ def make_preview_video(stream_name: str) -> None:
         rtmp_url = _get_rtmp_url(stream)
         _capture_preview_video(new_preview_video_file_path, rtmp_url, stream_name)
 
-        if _is_preview_video_size_valid(new_preview_video_file_path):
+        symlink_file_name = _get_preview_video_symlink_file_name(stream_name)
+        exclusive_file_names = [symlink_file_name]
+        if _is_preview_video_size_valid(new_preview_video_file_path) and not _is_blurry(new_preview_video_file_path):
             _update_preview_video_symlink(stream_name, new_preview_video_file_path)
-
-            symlink_file_name = _get_preview_video_symlink_file_name(stream_name)
-            exclusive_file_names = [symlink_file_name, new_preview_video_name]
-            _cleanup_old_preview_videos(stream_name, exclusive_file_names)
+            exclusive_file_names.append(new_preview_video_name)
+            log.info('keep new video: {new_preview_video_name}')
+        else:
+            symlink_file_path = _get_preview_video_symlink_file_path(stream_name)
+            existing_preview_video_name = os.path.realpath(symlink_file_path).split('/')[-1]
+            exclusive_file_names.append(existing_preview_video_name)
+            log.info('keep old video: {existing_preview_video_name}')
+        _cleanup_preview_videos(stream_name, exclusive_file_names)
     except SoftTimeLimitExceeded:
         log.error(f'{stream_name}: Failed to create preview video within the time specified.')
     except Exception as e:

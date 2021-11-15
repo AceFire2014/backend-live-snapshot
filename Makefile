@@ -2,6 +2,12 @@ PYTHON = $(shell which python3 || which python)
 PIP = $(shell which pip3 || which pip)
 PIP_COMPILE = $(shell which pip-compile)
 
+run:
+	if [ ! -d storage]; then \
+	  mkdir storage; \
+	fi; \
+	docker-compose up
+
 worker:
 	env CONFIG='tasks.config' MODE='dev' celery -A tasks.app.celery_app worker --pool=solo -c1
 beat:
