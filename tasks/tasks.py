@@ -21,13 +21,13 @@ log = logging.getLogger(__name__)
 
 cams_api = CamsAPI(CamsAPISyncRequester(config.CAMS_URL))
 
-if config.MODE == 'dev':
-    from celery.signals import worker_ready
-
-    @worker_ready.connect
-    def at_start(sender, **k):
-        with sender.app.connection() as conn:
-            sender.app.send_task('tasks.tasks.make_all_preview_videos', connection=conn)
+# if config.MODE == 'dev':
+#     from celery.signals import worker_ready
+# 
+#     @worker_ready.connect
+#     def at_start(sender, **k):
+#         with sender.app.connection() as conn:
+#             sender.app.send_task('tasks.tasks.make_all_preview_videos', connection=conn)
 
 
 def ensure_exists(path):
