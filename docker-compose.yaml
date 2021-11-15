@@ -49,7 +49,7 @@ services:
     volumes:
       - './tasks:/opt/application/tasks'
       - './common:/opt/application/common'
-      - 'image_storage:/var/storage'
+      - './storage:/var/storage'
     depends_on:
       - rabbitmq
     networks:
@@ -72,7 +72,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/templates/nginx.conf.template
       - ./nginx/nginx.crt:/etc/nginx/nginx.crt
       - ./nginx/nginx.key:/etc/nginx/nginx.key
-      - image_storage:/var/storage
+      - ./storage:/var/storage
     networks:
       - default
     restart: unless-stopped
@@ -93,12 +93,3 @@ networks:
     ipam:
       config:
       - subnet: '192.168.30.0/26'
-
-
-volumes:
-  image_storage:
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: './storage'
