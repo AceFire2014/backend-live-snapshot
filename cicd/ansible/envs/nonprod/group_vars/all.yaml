@@ -20,7 +20,7 @@ templates_list:
 
 replicas:
   beat: 1
-  worker: 2
+  worker: 20
   nginx: 2
 
 hpa:
@@ -30,8 +30,8 @@ hpa:
     mem: 70
     cpu: 50
   worker:
-    min: 2
-    max: 2
+    min: 20
+    max: 30
     mem: 70
     cpu: 50
   nginx:
